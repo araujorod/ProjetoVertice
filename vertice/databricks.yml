@@ -1,4 +1,4 @@
-# This is a Declarative Automation Bundle definition for vertice.
+# Bundle vertice · Projeto Farol (Vértice Tecnologia)
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
   name: vertice
@@ -7,35 +7,33 @@ bundle:
 include:
   - resources/*.yml
 
-# Variable declarations. These variables are assigned in the dev/prod targets below.
 variables:
   catalog:
-    description: The catalog to use
-  schema:
-    description: The schema to use
+    description: Catálogo do Lakehouse da Vértice
+    default: lakehouse_vertice
+  warehouse_id:
+    description: SQL warehouse das sql_task (Serverless Starter Warehouse)
+    default: dc7b8d0d81c6d177
+  s3_access_key_id:
+    description: chave do data lake (o valor fica fora do Git)
+  s3_secret_access_key:
+    description: chave do data lake (o valor fica fora do Git)
 
 targets:
   dev:
-    # The default target uses 'mode: development' to create a development copy.
-    # - Deployed resources get prefixed with '[dev my_user_name]'
-    # - Any job schedules and triggers are paused by default.
-    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
-    mode: development
+    # Sem mode: development (ele prefixa os nomes com [dev usuario]).
+    # O preset deixa todo agendamento e gatilho pausado no dev.
     default: true
+    presets:
+      trigger_pause_status: PAUSED
     workspace:
       host: https://dbc-63b6ef3a-74e9.cloud.databricks.com
-    variables:
-      catalog: workspace
-      schema: dev
   prod:
     mode: production
     workspace:
       host: https://dbc-63b6ef3a-74e9.cloud.databricks.com
       # We explicitly deploy to /Workspace/Users/araujorod@outlook.com to make sure we only have a single copy.
       root_path: /Workspace/Users/araujorod@outlook.com/.bundle/${bundle.name}/${bundle.target}
-    variables:
-      catalog: workspace
-      schema: prod
     permissions:
       - user_name: araujorod@outlook.com
         level: CAN_MANAGE
