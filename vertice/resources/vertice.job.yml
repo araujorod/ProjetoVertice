@@ -1,3 +1,23 @@
+# =============================================================================
+# Job vertice_farol · a Torre de Controle da Vértice, de ponta a ponta
+#
+#   ingestao_feriados ──┐
+#                       ├── conferencia_bronze ── medalhao ──┬── testes_de_qualidade
+#   ingestao_data_lake ─┘                                    └── status_com_ia
+#
+#   1. ingestao_feriados    notebook: feriados da BrasilAPI → bronze.feriados
+#   2. ingestao_data_lake   notebook: baixa os arquivos do Supabase Storage (boto3/S3),
+#                           pousa no volume bronze.raw e recria as 9 tabelas da bronze
+#   3. conferencia_bronze   sql_task: confere as 9 tabelas antes de seguir
+#   4. medalhao             pipeline declarativo vertice_medalhao: silver ×7 → gold ×3
+#   5. testes_de_qualidade  sql_task: 10 testes, raise_error derruba a tarefa se um falhar
+#   6. status_com_ia        sql_task: texto do status → gold.status_estruturado
+#                           (ai_classify + ai_extract, MERGE incremental)
+#
+# Roda toda segunda às 6h (America/Sao_Paulo). No target dev o preset
+# trigger_pause_status: PAUSED deixa o agendamento pausado, e está certo.
+# max_concurrent_runs: 1 porque duas execuções juntas apagariam a bronze uma da outra.
+# =============================================================================
 resources:
   jobs:
     vertice_farol:
@@ -55,6 +75,16 @@ resources:
             warehouse_id: ${var.warehouse_id}
             file:
               path: ../src/testes/testes.sql
+
+        # o texto livre do status vira coluna (IA só nos últimos 90 dias com bloqueio),
+        # em paralelo com os testes
+        - task_key: status_com_ia
+          depends_on:
+            - task_key: medalhao
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/ia/status_estruturado.sql
       email_notifications:
         no_alert_for_skipped_runs: false
       max_concurrent_runs: 1
