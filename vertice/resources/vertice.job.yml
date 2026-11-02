@@ -40,12 +40,21 @@ resources:
             file:
               path: ../src/conferencia/00-conferencia-bronze.sql
 
-        # pipeline declarativo: silver (e, no prompt 2, gold)
+        # pipeline declarativo: silver e gold
         - task_key: medalhao
           depends_on:
             - task_key: conferencia_bronze
           pipeline_task:
             pipeline_id: ${resources.pipelines.vertice_medalhao.id}
+
+        # os 10 testes de qualidade (raise_error derruba a tarefa se algum falhar)
+        - task_key: testes_de_qualidade
+          depends_on:
+            - task_key: medalhao
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/testes/testes.sql
       email_notifications:
         no_alert_for_skipped_runs: false
       max_concurrent_runs: 1
